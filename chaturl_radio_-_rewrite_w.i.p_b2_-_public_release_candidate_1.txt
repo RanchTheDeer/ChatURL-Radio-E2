@@ -1,0 +1,348 @@
+@name chaturl-radio/b2/ChatURL Radio - Rewrite W.I.P B2 - PUBLIC RELEASE CANDIDATE 1
+@inputs EGP:wirelink
+@outputs [HTTP HTTPData SearchData]:string [StreamQueueDebug TitleQueueDebug TimeTableDebug]:table
+         # Non-configurable variables
+@persist TargetEntity:entity [StreamQueue TitleQueue TimeTable]:table Clock1 SearchResult:string 
+@persist Cont CachedResult:array Time:array
+         # Configurable variables
+@persist GoogleAPIKey:string YT2MP3APIKey:string SteamID:string Volume 
+@persist QueueFontSize DisplayResults E2Title:string
+@persist Prefix:string
+       # Sets the base E2's model, comment out if you wish to spawn as a chip
+@model models/props_lab/citizenradio.mdl
+
+if(duped())
+{
+    reset() # Basically just resets the whole E2 so it doesn't malfunction when spawned using AD2
+}
+if(first()) {
+    streamStop(1)
+    timer("egp_init", 100)
+    
+    E2Title = "ChatURL Radio - Version B2\nPublic Release Candidate 30.12.20\n"
+    setName(E2Title)
+    Volume = 50 # The default volume for the stream
+    QueueFontSize = 15 # The font size of the queue box (adjust with DisplayResults)
+    DisplayResults = 10 # The amount of results retrieved from a search
+    Prefix = "+" # The character that comes before the commands
+    GoogleAPIKey = "CHANGE ME" # Your Google API key for the Youtube Search v3 API
+    YT2MP3APIKey = "CHANGE ME" # Your E2 API key from the Gaerrison-softs.fr website
+    SteamID = owner():steamID()
+    TargetEntity = entity()
+    
+    function egp_init() {
+        EGP:egpClear() # clears the entire EGP of content before adding new stuff
+        
+        #Background
+        EGP:egpBox(1, vec2(256,256), vec2(512, 512))
+        #EGP:egpColor(1, vec(100,100,100))
+        EGP:egpColor(1, vec(55,54,57))
+        EGP:egpSize(1, 10)
+        
+        # Main "Now Playing" box
+        EGP:egpRoundedBox(9, vec2(256,429), vec2(502, 67))
+        EGP:egpColor(9, vec(35,34,40))
+        
+        # Main 'Search Results'/'Queue' box
+        EGP:egpRoundedBox(10, vec2(256,213), vec2(502, 361))
+        EGP:egpColor(10, vec(35,35,42))
+        
+        # Box under 'ChatURL' header text
+        EGP:egpRoundedBox(7, vec2(256,17), vec2(502, 29))
+        EGP:egpColor(7, vec(70,67,75))
+        
+        EGP:egpText(2, "ChatURL Radio", vec2(255,0))
+        EGP:egpColor(2, vec(230,230,230))
+        EGP:egpAlign(2, 1)
+        EGP:egpSize(2, 30)
+        
+        EGP:egpText(3, "Command Prefix: " + Prefix, vec2(256,460))
+        EGP:egpColor(3, vec(230,230,230))
+        EGP:egpAlign(3, 1)
+        EGP:egpSize(3, 23)
+        
+        EGP:egpText(4, "For help, do " + Prefix + "help", vec2(256,477))
+        EGP:egpColor(4, vec(230,230,230))
+        EGP:egpAlign(4, 1)
+        EGP:egpSize(4, 20)
+        
+        #EGP:egpText(5, "(C) Ranch the Deer, 2020", vec2(256,473))
+        #EGP:egpColor(5, vec(230,230,230))
+        #EGP:egpAlign(5, 1)
+        #EGP:egpSize(5, 20)
+        
+        # Footer text underneath the copyright info
+        EGP:egpText(11, "Version B2 | 29/11/2020", vec2(255,493))
+        EGP:egpColor(11, vec(230,230,230))
+        EGP:egpAlign(11, 1)
+        EGP:egpSize(11, 20)
+        
+        # Header text for the "Now Playing" box
+        EGP:egpText(6, "Now Playing:", vec2(255,392))
+        EGP:egpAlign(6, 1)
+        EGP:egpSize(6, 25)
+        
+        # Main text for the "Now Playing" box
+        EGP:egpTextLayout(8, "", vec2(10,415), vec2(502,130))
+        EGP:egpAlign(8, 1)
+        EGP:egpSize(8, 23)
+        
+        # Search function return
+        EGP:egpTextLayout(12, "Search results:", vec2(6,31), vec2(502,130))
+        EGP:egpColor(12, vec(230,230,230))
+        EGP:egpAlign(12, 1)
+        EGP:egpSize(12, 20)
+        EGP:egpTextLayout(13, SearchResult, vec2(8,48), vec2(500,360))
+        EGP:egpColor(13, vec(225,225,225))
+        EGP:egpAlign(13, 1)
+        EGP:egpSize(13, 15)
+        TargetEntity = entity()
+    }
+    function doStream(S:string) 
+    {
+        streamDisable3D(1)
+        TargetEntity:streamStart(1,1,S)
+        streamVolume(1, Volume/100)
+        timer("playNext_1", 100)
+    }
+    function updateText()
+    {
+        EGP:egpSetText(6, "Now playing:")
+        EGP:egpSetText(8, TitleQueue[1, string])
+    }
+    function playNext() {
+        if(StreamQueue:count() > 0) 
+        {
+            TitleQueue:remove(1)
+            TimeTable:remove(1)
+            StreamQueue:remove(1)
+            if(StreamQueue:count() > 0)
+            {
+                doStream(StreamQueue[1, string])
+            }
+        }
+        else
+        {
+            streamStop(1)
+        }
+        updateText()
+    }
+    function searchProcess() {
+        CachedResult = array()
+        local JSON2 = jsonDecode(httpData())
+        for(I=1, JSON2["pageInfo", table]["resultsPerPage", number])
+        {
+            V = JSON2["items", table][I, table]["snippet", table]
+            Title = V["title", string]
+            Channel = V["channelTitle", string]
+            ID = JSON2["items", table][I, table]["id", table]["videoId", string]
+            SearchResult = SearchResult + Title + "\n" + "# " + ID + " | # " + I + "\n"
+            
+            CachedResult:pushString( ID )
+        }
+        EGP:egpSetText(13, SearchResult)
+    }
+    
+    function displayQueue() {
+        local DisplayQueue = ""
+        DisplayQueue = TitleQueue:concat("\n")
+        EGP:egpSetText(12, "Queue:")
+        EGP:egpSetText(13, DisplayQueue)
+        EGP:egpSize(13, QueueFontSize)
+        timer("delayReturnToSearch", 3000)
+    }
+}
+
+if (clk("egp_init")) {
+    egp_init()
+    displayQueue()
+    runOnChat(1)
+    runOnHTTP(1)
+}
+
+if (->EGP & changed(->EGP)) { egp_init() }
+
+if (chatClk()){
+    O=lastSaid():explode(" ")
+    if(O[1, string] == Prefix + "target")
+    {
+        hideChat(1)
+        T = findPlayerByName(O[2, string])
+        if(T:isPlayer())
+        {
+            TargetEntity = T
+            EGP:egpSetText(8, "Target Selected:\n" + TargetEntity:name())
+            timer("delayUpdateText", 1500)
+        }
+        elseif(O[2, string] == "radio")
+        {
+            TargetEntity = entity()
+            EGP:egpSetText(8, "Target Selected:\nRadio")
+            timer("delayUpdateText", 1500)
+        }
+        else
+        {
+            EGP:egpSetText(8, "Invalid target!")
+            timer("delayUpdateText", 1500)
+        }
+    }
+    if(O[1, string] == Prefix + "ytid")
+    {
+        hideChat(1)
+        Clock1 = 0
+        
+        local N = O[2, string]:toNumber()
+        if(O[2, string] != "")
+        {
+            if( inrange(N, 1, CachedResult:count()) ) 
+            {
+                O[2,string] = CachedResult[N,string]
+            }
+            streamDisable3D(1)
+            httpRequest("http://ytdl.gaerisson-softs.fr/E2/YT_API?key=" + YT2MP3APIKey + "&steamid=" + SteamID + "&url=www.youtube.com/watch?v=" + O[2, string])
+            EGP:egpSetText(6, "Resolving stream, please wait...")
+        }
+    }
+    if(O[1, string] == Prefix + "search")
+    {
+        hideChat(1)
+        local Query = lastSpoke():lastSaid():sub(8)
+        local Query2 = Query:explode(" ")
+        local FQ = Query2:concat("%20")
+        Clock1 = 1
+        httpRequest("https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=" + DisplayResults + "&order=relevance&q=" + FQ + "&safeSearch=none&type=video&key=" + GoogleAPIKey)     
+    }
+    if(O[1, string] == Prefix + "skip")
+    {
+        hideChat(1)
+        if(StreamQueue:count() == 0)
+        {
+            streamStop(1)
+        }
+        else
+        {
+            playNext()
+        }
+    }
+    if(O[1, string] == Prefix + "volume")
+    {
+        hideChat(1)
+        Volume = O[2, string]:toNumber()
+        if(O[2, string]:toNumber() > 100)
+        {
+            Volume = 100
+            streamVolume(1, Volume/100)
+            EGP:egpSetText(8, "Volume: 100%")
+            timer("delayUpdateText", 750)
+        }
+        if(O[2, string]:toNumber() < 0)
+        {
+            Volume = 0
+            streamVolume(1, Volume/100)
+            EGP:egpSetText(8, "Volume: 0%")
+            timer("delayUpdateText", 750)
+        }
+        else
+        {
+            streamVolume(1, Volume / 100)
+            EGP:egpSetText(8, "Volume: " + Volume + "%")
+            timer("delayUpdateText", 750)
+        }
+    }
+    
+    if(O[1, string] == Prefix + "queue")
+    {
+        hideChat(1)
+        displayQueue()
+        timer("delayReturnToSearch", 6000)
+    }
+    if(O[1, string] == ".commands")
+    {
+        hideChat(1)
+        EGP:egpSetText(12,"Commands:")
+        EGP:egpSetText(13, ".target playername - Changes the source of the sound\n"+
+        ".ytid videoid - Provide a Youtube Video ID for processing\n"+
+        ".ytid num - Select a video from the search\n"+
+        ".search phrase - Searches for phrase via Youtube API\n"+
+        ".skip - Skips the currently playing song\n"+
+        ".volume number - Sets the volume (between 0 and 100%)")
+        timer("delayReturnToSearch", 6000)
+    }
+}
+
+if(httpClk() && Clock1 == 0)
+{
+    local JSON = jsonDecode(httpData())[1,table]
+    local STATE = JSON["state",string]
+    
+    if(STATE:lower():find("cached")) 
+    {
+        StreamQueue:pushString(JSON["url", string])
+        TitleQueue:pushString(JSON["title", string])
+        TimeTable:pushString(JSON["vtime", string])
+        if (StreamQueue:count() > 1) 
+        {
+            EGP:egpSetText(6, "Stream found (queued)")
+        } 
+        else 
+        {
+            EGP:egpSetText(6, "Stream found (playing)")
+            doStream(JSON["url",string])
+        }
+        displayQueue()
+        runOnChat(1)
+        timer("delayUpdateText", 2000)
+        timer("delayReturnToSearch", 2000)
+    } 
+    else 
+    {
+        EGP:egpSetText(6, JSON["status", string])
+        timer("delayUpdateText", 2000)
+    }
+}
+if(httpClk() && Clock1 == 1)
+{
+    SearchResult = ""
+    searchProcess()
+    Clock1 = 0
+}
+if(clk("playNext_1")) {
+    Time = TimeTable[1,string]:explode(":")
+    local Hrs = Time[1,string]:toNumber() * 3600000
+    local Min = Time[2,string]:toNumber() * 60000
+    local Sec = Time[3,string]:toNumber() * 1000
+    local MS = Hrs + Min + Sec
+    timer("playTime", 1000)
+    timer("playNext", MS)
+}
+if(clk("playNext")) 
+{
+    playNext()
+}
+if(clk("delayUpdateText"))
+{
+    updateText()
+}
+if(clk("queue"))
+{
+    displayQueue()
+}
+if(clk("delayReturnToSearch"))
+{
+    if(SearchResult != "")
+    {
+        EGP:egpSetText(13, SearchResult)
+    }
+}
+if(changed(TitleQueue:count()))
+{
+    TitleQueueDebug = TitleQueue
+}
+if(changed(StreamQueue:count()))
+{
+    StreamQueueDebug = StreamQueue
+}
+if(changed(TimeTable:count()))
+{
+    TimeTableDebug = TimeTable
+}
