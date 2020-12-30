@@ -14,6 +14,6 @@ Assign the key to the "YT2MP3APIKey" string.
 Assign your SteamID provided by the website to the "SteamID" variable.
 
 To use the search function of the E2, you must obtain a Google API key for the Youtube Search v3 API. This is not required for normal operation as you may specify Youtube IDs directly using the ytid command, however is recommended for ease of use.
-https://console.developers.google.com/apis/dashboard
+https://console.developers.google.com/apis/library/youtube.googleapis.com
 
 Make sure to change the GoogleAPIKey, YT2MP3APIKey and SteamID variables respectively.
