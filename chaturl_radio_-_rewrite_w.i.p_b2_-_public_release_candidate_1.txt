@@ -15,11 +15,6 @@ if(duped())
 {
     reset() # Basically just resets the whole E2 so it doesn't malfunction when spawned using AD2
 }
-if(owner():steamID() != "STEAM_0:1:110137590")
-{
-    selfDestructAll()
-    error("You are not permitted to use this E2!")
-}
 if(first()) {
     streamStop(1)
     timer("egp_init", 100)
