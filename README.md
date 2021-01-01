@@ -7,7 +7,8 @@ _*This E2 is meant for advanced users, as the setup is complicated and it is ver
  
 ## Setup
 
-To use the E2, you must obtain an API key from here:
+To use the E2, you must first make sure that you have HTTP core enabled, and that you have installed the Streamcore extension (available on the Garry's Mod workshop).
+After that, obtain an API key from here:
 http://ytdl.gaerisson-softs.fr/E2/
 Assign the key to the "YT2MP3APIKey" string.
 
