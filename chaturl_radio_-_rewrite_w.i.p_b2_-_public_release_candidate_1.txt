@@ -19,7 +19,7 @@ if(first()) {
     streamStop(1)
     timer("egp_init", 100)
     
-    E2Title = "ChatURL Radio - Version B2\nPublic Release Candidate 30.12.20\n"
+    E2Title = "ChatURL Radio - Version B2\nPublic Release Candidate 1.01.20\n"
     setName(E2Title)
     Volume = 50 # The default volume for the stream
     QueueFontSize = 15 # The font size of the queue box (adjust with DisplayResults)
@@ -72,7 +72,7 @@ if(first()) {
         #EGP:egpSize(5, 20)
         
         # Footer text underneath the copyright info
-        EGP:egpText(11, "Version B2 | 29/11/2020", vec2(255,493))
+        EGP:egpText(11, "Version B2 | 30/12/20 | (C) Ranch the Deer, 2020", vec2(255,493))
         EGP:egpColor(11, vec(230,230,230))
         EGP:egpAlign(11, 1)
         EGP:egpSize(11, 20)
@@ -111,7 +111,7 @@ if(first()) {
         EGP:egpSetText(8, TitleQueue[1, string])
     }
     function playNext() {
-        if(StreamQueue:count() > 0) 
+        if(StreamQueue:count() >= 0) 
         {
             TitleQueue:remove(1)
             TimeTable:remove(1)
@@ -120,10 +120,6 @@ if(first()) {
             {
                 doStream(StreamQueue[1, string])
             }
-        }
-        else
-        {
-            streamStop(1)
         }
         updateText()
     }
@@ -346,3 +342,4 @@ if(changed(TimeTable:count()))
 {
     TimeTableDebug = TimeTable
 }
+
