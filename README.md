@@ -3,7 +3,7 @@
 This is a repository holding the latest public release of my ChatURL Radio E2.
 Expression 2 is a programming language for the game Garry's Mod. This is designed for use as an Expression 2 chip.
 
-_*This E2 is meant for advanced users, as the setup is complicated and it is very unstable! If you don't know what you're doing, don't use it!*_
+_*This E2 is meant for advanced users, as the setup is complicated and it's a big buggy! Use with care!*_
  
 ## Setup
 
