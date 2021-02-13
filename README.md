@@ -1,7 +1,7 @@
 # ChatURL Radio E2
 
 This is a repository holding the latest public release of my ChatURL Radio E2.
-Expression 2 is a programming language for the game Garry's Mod. This is designed for use as an Expression 2 chip.
+E2 stands for Expression 2, which is a programming language for the game Garry's Mod. This is designed for use as an Expression 2 chip.
 
 _*This E2 is meant for advanced users, as the setup is complicated and it's a big buggy! Use with care!*_
  
@@ -22,4 +22,4 @@ Make sure to change the GoogleAPIKey, YT2MP3APIKey and SteamID variables respect
 ## Licensing
 
 <html><a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons Licence" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.</html>
-In Layman's terms, this means that you can use it for whatever you want (provided you're not profiting from it) as long as you give me credit, and as long as you keep it under the same license.
+In Layman's terms, this means that you can use it for whatever you want (provided it's not commercial) as long as you give me fair credit, and as long as you keep it under the same license.
