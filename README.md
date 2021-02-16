@@ -7,14 +7,11 @@ _*This E2 is meant for advanced users, as the setup is complicated and it's a bi
  
 ## Setup
 
-To use the E2, you must first make sure that you have HTTP core enabled (or the server you are playing on has it enabled), and that you/the server has the Streamcore extension ([available here](https://steamcommunity.com/sharedfiles/filedetails/?id=442653157)).
+To use the E2, you must first make sure that you have HTTP core enabled (or the server you are playing on has it enabled), and that you/the server has the Streamcore extension ([available here](https://steamcommunity.com/sharedfiles/filedetails/?id=442653157)), otherwise the E2 won't work.
 If you're playing singleplayer, you can enable HTTP core using the following command in console:
 `wire_expression2_extension_enable http`
 
-After that, visit this site:
-http://ytdl.gaerisson-softs.fr/E2/
-
-You should be greeted with this page:
+First off, visit [this page](http://ytdl.gaerisson-softs.fr/E2/). It should look something like this:
 ![Login with Steam button page](https://i.ibb.co/cLsGqHt/image.png)
 
 Simply follow the instructions, and when a green "Sign in" button appears on a Steam page, click it.
@@ -23,13 +20,13 @@ If all goes well, you'll see a box like this:
 ![Gaerisson's API Key Page](https://i.ibb.co/VtqrwbZ/image.png)
 
 All you have to do now is hover over your private key to unblur it, then copy it and put it inside the E2 (delete "CHANGEME2" and replace it with "yourkeyhere".
-Remember: **keep your key private!** Do **not** share your key or the E2 with the key in it with *anyone*! If they want the E2, direct them to this Github page and tell them to set it up for themselves.
+Remember: **keep your key private!** Do **not** share your key or the E2 with the key in it with ***anyone***! If they want the E2, direct them to this Github page and tell them to set it up for themselves.
 
 The SteamID provided on the webpage is not required as it'll automatically use the SteamID of the person who spawned it.
 
-To use the (optional but recommended) search function of the E2, you must obtain a Google API key for the Youtube Search v3 API. It's not the easiest of things to do, but the gist of it is as follows:
+To use the (optional but recommended) search function of the E2, you must obtain a Google API key for the Youtube Search v3 API. It seems a little complex at first, but it's easy once you know how!
 
-- Make sure you are signed in with a Google account in your browser, then follow [this](https://console.developers.google.com/apis/library/youtube.googleapis.com) link.
+Make sure you are signed in with a Google account in your browser, then follow [this](https://console.developers.google.com/apis/library/youtube.googleapis.com) link.
 You should see this:
 ![Youtube Search API Page Screenshot](https://i.ibb.co/PWDJ1MM/image.png)
 
