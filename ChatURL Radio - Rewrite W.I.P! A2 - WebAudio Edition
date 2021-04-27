@@ -1,0 +1,318 @@
+@name chaturl-radio/b2/ChatURL Radio - Rewrite W.I.P! A2 - WebAudio Edition
+@inputs EGP:wirelink
+@outputs [HTTP HTTPData SearchData]:string [StreamQueueDebug TitleQueueDebug TimeTableDebug]:table
+         # Non-configurable variables
+@persist TargetEntity:entity [StreamQueue TitleQueue TimeTable]:table Clock1 SearchResult:string 
+@persist Cont CachedResult:array Time:array HTTPTryCount WebAudio:webaudio
+         # Configurable variables
+@persist GoogleAPIKey:string YT2MP3APIKey:string SteamID:string Volume 
+@persist QueueFontSize DisplayResults E2Title:string HTTPTimeout HTTPMaxAttempts Enable3D
+@persist Prefix:string VerID:string
+       # Sets the base E2's model, comment out if you wish to spawn as a chip
+@model models/props_lab/citizenradio.mdl
+
+if(duped())
+{
+    reset() # Basically just resets the whole E2 so it doesn't malfunction when spawned using AD2
+}
+if(first()) {
+    #include "chaturl-radio/b2/chaturl_radio_egpdisplay"
+    WebAudio = nowebaudio()
+    timer("egp_init", 100)
+    Enable3D = 0
+    VerID = "27.04.21"
+    E2Title = "ChatURL Radio - Version A2 Alpha | " + VerID
+    setName(E2Title)
+    
+    # Parameter setup (set these correctly or the E2 won't work!)
+    GoogleAPIKey = ""
+    YT2MP3APIKey = ""
+    SteamID = ""
+    
+    # Basic configuration
+    Volume = 50 # The default volume for the stream
+    QueueFontSize = 15 # The font size of the queue box (adjust with DisplayResults)
+    DisplayResults = 10 # The amount of results retrieved from a search
+    Prefix = "." # The character that comes before the commands
+    TargetEntity = entity() # Sets the default origin of the stream to the chip
+    
+    # Advanced configuration (should only be tweaked if you know what you're doing)
+    HTTPTimeout = 10000 # Time in ms before the HTTP timer clocks
+    HTTPMaxAttempts = 3 # The maximum number of attempts the timer has at resolving the stream
+    
+    function egp_init() {
+        egpBuild()
+    }
+    function doStream(S:string) 
+    {
+        print(webAudioCanCreate(S))
+        if(webAudioCanCreate(S))
+        {
+            WebAudio = webAudio(S)
+            WebAudio:setParent(TargetEntity)
+            WebAudio:play()
+            WebAudio:setVolume(Volume)
+            timer("playNext_1", 100)
+        }
+        else
+        {
+            timer("retryStream", 500)
+        }
+    }
+    function updateText()
+    {
+        EGP:egpSetText(NowPlayingTitleID, "Now Playing:")
+        EGP:egpSetText(NowPlayingID, TitleQueue[1, string])
+    }
+    function playNext() {
+        if(StreamQueue:count() >= 0) 
+        {
+            TitleQueue:remove(1)
+            TimeTable:remove(1)
+            StreamQueue:remove(1)
+            if(StreamQueue:count() > 0)
+            {
+                doStream(StreamQueue[1, string])
+            }
+        }
+        updateText()
+    }
+    function searchProcess() {
+        CachedResult = array()
+        local JSON2 = jsonDecode(httpData())
+        for(I=1, JSON2["pageInfo", table]["resultsPerPage", number])
+        {
+            V = JSON2["items", table][I, table]["snippet", table]
+            Title = V["title", string]
+            Channel = V["channelTitle", string]
+            ID = JSON2["items", table][I, table]["id", table]["videoId", string]
+            SearchResult = SearchResult + Title + "\n" + "# " + ID + " | # " + I + "\n"
+            
+            CachedResult:pushString( ID )
+        }
+        EGP:egpSetText(SearchBoxID, SearchResult)
+    }
+    
+    function displayQueue() {
+        local DisplayQueue = ""
+        DisplayQueue = TitleQueue:concat("\n")
+        EGP:egpSetText(SearchBoxTitleID, "Queue:")
+        EGP:egpSetText(SearchBoxID, DisplayQueue)
+        EGP:egpSize(SearchBoxID, QueueFontSize)
+        timer("delayReturnToSearch", 3000)
+    }
+}
+
+if (clk("egp_init")) {
+    egp_init()
+    displayQueue()
+    runOnChat(1)
+    runOnHTTP(1)
+}
+
+if (->EGP & changed(->EGP)) { egp_init() }
+
+if (chatClk()){
+    O=lastSaid():explode(" ")
+    if(O[1, string] == Prefix + "target")
+    {
+        hideChat(1)
+        T = findPlayerByName(O[2, string])
+        if(T:isPlayer())
+        {
+            TargetEntity = T
+            EGP:egpSetText(NowPlayingTitleID, "Target Selected:\n" + TargetEntity:name())
+            timer("delayUpdateText", 1500)
+        }
+        elseif(O[2, string] == "radio")
+        {
+            TargetEntity = entity()
+            EGP:egpSetText(NowPlayingTitleID, "Target Selected:\nRadio")
+            timer("delayUpdateText", 1500)
+        }
+        else
+        {
+            EGP:egpSetText(NowPlayingTitleID, "Invalid target!")
+            timer("delayUpdateText", 1500)
+        }
+    }
+    if(O[1, string] == Prefix + "ytid")
+    {
+        hideChat(1)
+        Clock1 = 0
+        
+        local N = O[2, string]:toNumber()
+        if(O[2, string] != "")
+        {
+            if( inrange(N, 1, CachedResult:count()) ) 
+            {
+                O[2,string] = CachedResult[N,string]
+            }
+            httpRequest("http://ytdl.gaerisson-softs.fr/E2/YT_API?key=" + YT2MP3APIKey + "&steamid=" + SteamID + "&url=www.youtube.com/watch?v=" + O[2, string])
+            EGP:egpSetText(NowPlayingTitleID, "Resolving stream, please wait... 1/3")
+            timer("httpTimeout", HTTPTimeout)
+        }
+    }
+    if(O[1, string] == Prefix + "search")
+    {
+        hideChat(1)
+        local Query = lastSpoke():lastSaid():sub(8)
+        local Query2 = Query:explode(" ")
+        local FQ = Query2:concat("%20")
+        Clock1 = 1
+        httpRequest("https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=" + DisplayResults + "&order=relevance&q=" + FQ + "&safeSearch=none&type=video&key=" + GoogleAPIKey)     
+    }
+    if(O[1, string] == Prefix + "skip")
+    {
+        hideChat(1)
+        if(StreamQueue:count() == 0)
+        {
+            WebAudio:destroy()
+        }
+        else
+        {
+            playNext()
+        }
+    }
+    if(O[1, string] == Prefix + "volume")
+    {
+        hideChat(1)
+        Volume = clamp(O[2, string]:toNumber()*2, 0, 200)
+        if(WebAudio != nowebaudio())
+        {
+            WebAudio:setVolume(Volume)
+        }
+        EGP:egpSetText(NowPlayingTitleID, "Volume: " + Volume/2)
+        WebAudio:update()
+        timer("delayUpdateText", 750)
+    }
+    
+    if(O[1, string] == Prefix + "queue")
+    {
+        hideChat(1)
+        displayQueue()
+        timer("delayReturnToSearch", 6000)
+    }
+    if(O[1, string] == Prefix + "3d")
+    {
+        Enable3D = clamp(O[2, string]:toNumber(), 0, 1)
+        if(Enable3D)
+        {
+            EGP:egpSetText(NowPlayingTitleID, "3D Enabled")
+        }
+        else
+        {
+            EGP:egpSetText(NowPlayingTitleID, "3D Enabled")
+        }
+        timer("delayUpdateText", 750)
+    }
+    if(O[1, string] == ".commands")
+    {
+        hideChat(1)
+        EGP:egpSetText(SearchBoxTitleID, "Commands:")
+        EGP:egpSetText(SearchBoxID, ".target playername - Changes the source of the sound\n"+
+        ".ytid videoid - Provide a Youtube Video ID for processing\n"+
+        ".ytid num - Select a video from the search\n"+
+        ".search phrase - Searches for phrase via Youtube API\n"+
+        ".skip - Skips the currently playing song\n"+
+        ".volume number - Sets the volume (between 0 and 100%)")
+        timer("delayReturnToSearch", 6000)
+    }
+}
+
+if(httpClk() && Clock1 == 0)
+{
+    local JSON = jsonDecode(httpData())[1,table]
+    local STATE = JSON["state",string]
+    print(JSON)
+    print(STATE)
+    if(STATE:lower():find("cached")) 
+    {
+        HTTPTryCount = 0
+        stoptimer("httpTimeout")
+        StreamQueue:pushString(JSON["url", string])
+        TitleQueue:pushString(JSON["title", string])
+        TimeTable:pushString(JSON["vtime", string])
+        if (StreamQueue:count() > 1) 
+        {
+            EGP:egpSetText(NowPlayingTitleID, "Stream found (queued)")
+        } 
+        else 
+        {
+            EGP:egpSetText(NowPlayingTitleID, "Stream found (playing)")
+            doStream(JSON["url",string])
+        }
+        displayQueue()
+        runOnChat(1)
+        timer("delayUpdateText", 2000)
+        timer("delayReturnToSearch", 2000)
+    } 
+    else 
+    {
+        EGP:egpSetText(6, JSON["status", string])
+        timer("delayUpdateText", 2000)
+    }
+}
+if(httpClk() && Clock1 == 1)
+{
+    SearchResult = ""
+    searchProcess()
+    Clock1 = 0
+}
+if(clk("playNext_1")) {
+    Time = TimeTable[1,string]:explode(":")
+    local Hrs = Time[1,string]:toNumber() * 3600000
+    local Min = Time[2,string]:toNumber() * 60000
+    local Sec = Time[3,string]:toNumber() * 1000
+    local MS = Hrs + Min + Sec
+    timer("playTime", 1000)
+    timer("playNext", MS)
+}
+if(clk("playNext")) 
+{
+    playNext()
+}
+if(clk("retryStream"))
+{
+    doStream(StreamQueue[1, string])
+}
+if(clk("delayUpdateText"))
+{
+    updateText()
+}
+if(clk("queue"))
+{
+    displayQueue()
+}
+if(clk("delayReturnToSearch"))
+{
+    if(SearchResult != "")
+    {
+        EGP:egpSetText(SearchBoxID, SearchResult)
+    }
+}
+if(clk("httpTimeout"))
+{
+    HTTPTryCount++
+    httpRequest("http://ytdl.gaerisson-softs.fr/E2/YT_API?key=" + YT2MP3APIKey + "&steamid=" + SteamID + "&url=www.youtube.com/watch?v=" + O[2, string])
+    EGP:egpSetText(6, "Resolving stream, please wait... " + HTTPTryCount + "/" + HTTPMaxAttempts)
+    timer("httpTimeout", HTTPTimeout)
+    if(HTTPTryCount >= HTTPMaxAttempts)
+    {
+        EGP:egpSetText(NowPlayingTitleID, "Stream resolution failed.")
+        timer("delayUpdateText", 2000)
+        stoptimer("httpTimeout")
+    }
+}
+if(changed(TitleQueue:count()))
+{
+    TitleQueueDebug = TitleQueue
+}
+if(changed(StreamQueue:count()))
+{
+    StreamQueueDebug = StreamQueue
+}
+if(changed(TimeTable:count()))
+{
+    TimeTableDebug = TimeTable
+}
